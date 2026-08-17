@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "kubeshri594/ecommerce-app"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
     }
 
     stages {
@@ -42,7 +43,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:latest .'
+                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
             }
         }
 
@@ -62,7 +63,7 @@ pipeline {
 
         stage('Docker Push') {
             steps {
-                sh 'docker push $IMAGE_NAME:latest'
+                sh 'docker push $IMAGE_NAME:$IMAGE_TAG'
             }
         }
 
@@ -70,7 +71,10 @@ pipeline {
             steps {
                 sh '''
                     aws eks update-kubeconfig --name devops-project-eks --region us-east-2
-                    kubectl set image deployment/ecommerce-app ecommerce-app=$IMAGE_NAME:latest
+
+                    kubectl set image deployment/ecommerce-app \
+                    ecommerce-app=$IMAGE_NAME:$IMAGE_TAG
+
                     kubectl rollout status deployment/ecommerce-app
                 '''
             }
@@ -83,7 +87,7 @@ pipeline {
         }
 
         success {
-            echo 'Pipeline completed successfully'
+            echo "Pipeline completed successfully. Deployed image: ${IMAGE_NAME}:${IMAGE_TAG}"
         }
 
         failure {
